@@ -1,0 +1,42 @@
+name: Fetch Annotations
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Run daily at midnight UTC
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  fetch-annotations:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          pip install requests
+          
+      - name: Fetch annotations and generate TSV
+        run: python scripts/fetch_annotations.py
+        
+      - name: Upload TSV artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: annotations-${{ github.run_number }}
+          path: annotations.tsv
+          
+      - name: Commit and push TSV file
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add annotations.tsv
+          git diff --staged --quiet || git commit -m "Update annotations.tsv [skip ci]
+
+          Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+          git push
