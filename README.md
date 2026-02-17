@@ -1,2 +1,2 @@
 # BUSCO-tracker
-Automated BUSCO values for eukaryotic genome annotation 
+Automated BUSCO analysis for eukaryotic genome annotations
