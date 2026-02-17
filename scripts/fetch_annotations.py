@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 ANNOTATIONS_API = "https://genome.crg.es/annotrieve/api/v0/annotations"
-ASSEMBLIES_API_BASE = "https://genome.crg.es/annotrieve/api/v0/assemblies"
+ASSEMBLIES_API = "https://genome.crg.es/annotrieve/api/v0/assemblies"
 
 
 def fetch_json(url):
@@ -25,41 +25,66 @@ def fetch_json(url):
         return None
 
 
-def fetch_assembly_url(assembly_accession, cache={}):
-    """Fetch assembly URL for given accession with caching."""
-    if not assembly_accession:
-        return ""
+def fetch_all_assemblies():
+    """Fetch all assemblies and build a lookup dictionary."""
+    logger.info("Fetching all assemblies from API...")
     
-    # Check cache first
-    if assembly_accession in cache:
-        return cache[assembly_accession]
+    assemblies_dict = {}
+    offset = 0
+    limit = 1000
     
-    url = f"{ASSEMBLIES_API_BASE}/{assembly_accession}"
-    data = fetch_json(url)
+    while True:
+        url = f"{ASSEMBLIES_API}?offset={offset}&limit={limit}"
+        logger.info(f"Fetching assemblies page with offset={offset}, limit={limit}")
+        data = fetch_json(url)
+        
+        if not data:
+            logger.error("Failed to fetch assemblies data")
+            break
+        
+        results = data.get('results', [])
+        if not results:
+            break
+        
+        # Build dictionary mapping assembly_accession to download_url
+        for assembly in results:
+            accession = assembly.get('assembly_accession', '')
+            download_url = assembly.get('download_url', '')
+            if accession:
+                assemblies_dict[accession] = download_url
+        
+        total = data.get('total', 0)
+        logger.info(f"Fetched {len(results)} assemblies (total so far: {len(assemblies_dict)}/{total})")
+        
+        # Check if we've fetched all assemblies
+        if len(assemblies_dict) >= total:
+            break
+        
+        offset += limit
     
-    result = ""
-    if data and 'download_url' in data:
-        result = data['download_url']
-    else:
-        logger.warning(f"Could not fetch assembly URL for {assembly_accession}")
-    
-    # Cache the result (even if empty)
-    cache[assembly_accession] = result
-    return result
+    logger.info(f"Built assembly lookup dictionary with {len(assemblies_dict)} entries")
+    return assemblies_dict
 
 
 def main():
     """Main function to fetch annotations and generate TSV."""
+    # First, fetch all assemblies and build lookup dictionary
+    assemblies_dict = fetch_all_assemblies()
+    
+    if not assemblies_dict:
+        logger.error("No assemblies found, cannot proceed")
+        sys.exit(1)
+    
+    # Now fetch all annotations
     logger.info("Fetching annotations from API...")
     
     all_annotations = []
     offset = 0
-    limit = 100
+    limit = 1000  # Use maximum limit for faster fetching
     
-    # Fetch all pages
     while True:
         url = f"{ANNOTATIONS_API}?offset={offset}&limit={limit}"
-        logger.info(f"Fetching page with offset={offset}, limit={limit}")
+        logger.info(f"Fetching annotations page with offset={offset}, limit={limit}")
         data = fetch_json(url)
         
         if not data:
@@ -96,6 +121,7 @@ def main():
         writer.writerow(['annotation_id', 'annotation_url', 'assembly_url'])
         
         # Process each annotation
+        missing_assemblies = set()
         for idx, annotation in enumerate(all_annotations, 1):
             annotation_id = annotation.get('annotation_id', '')
             
@@ -104,15 +130,22 @@ def main():
             if 'source_file_info' in annotation and 'url_path' in annotation['source_file_info']:
                 annotation_url = annotation['source_file_info']['url_path']
             
-            # Get assembly accession and fetch assembly URL
+            # Look up assembly URL from pre-built dictionary
             assembly_accession = annotation.get('assembly_accession', '')
-            assembly_url = fetch_assembly_url(assembly_accession) if assembly_accession else ''
+            assembly_url = assemblies_dict.get(assembly_accession, '')
+            
+            # Track missing assemblies for reporting
+            if assembly_accession and not assembly_url:
+                missing_assemblies.add(assembly_accession)
             
             # Write row
             writer.writerow([annotation_id, annotation_url, assembly_url])
             
-            if idx % 100 == 0:
+            if idx % 1000 == 0:
                 logger.info(f"Processed {idx}/{len(all_annotations)} annotations...")
+    
+    if missing_assemblies:
+        logger.warning(f"Could not find assembly URLs for {len(missing_assemblies)} assemblies")
     
     logger.info(f"Successfully generated {output_file} with {len(all_annotations)} annotations")
 
