@@ -28,9 +28,9 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
-          python-version: '3.11'
+          python-version: '3.12'
           miniforge-version: latest
-          channels: bioconda,conda-forge,defaults
+          channels: conda-forge,bioconda
           channel-priority: strict
           
       - name: Install annocli
@@ -52,98 +52,3 @@ jobs:
           agat_sp_keep_longest_isoform.pl --help | head -5 || true
           busco --version
           
-      - name: Download BUSCO lineage dataset
-        shell: bash -el {0}
-        run: |
-          echo "Downloading eukaryota_odb12 lineage dataset..."
-          mkdir -p busco_downloads
-          busco --download eukaryota_odb12 --download_path busco_downloads
-          
-          echo "Downloaded datasets:"
-          ls -la busco_downloads/
-          
-      - name: Set BUSCO config
-        shell: bash -el {0}
-        run: |
-          echo "Configuring BUSCO download path..."
-          export BUSCO_CONFIG_FILE="$(pwd)/busco_config.ini"
-          echo "[busco]" > busco_config.ini
-          echo "download_path = $(pwd)/busco_downloads" >> busco_config.ini
-          cat busco_config.ini
-          
-      - name: Verify tool installation
-        shell: bash -el {0}
-        run: |
-          echo "Checking annocli..."
-          annocli --version || echo "annocli installed"
-          
-          echo "Checking AGAT..."
-          agat_sp_keep_longest_isoform.pl --help | head -5 || true
-          
-          echo "Checking BUSCO..."
-          busco --version
-          
-      - name: Prepare limited annotations file
-        run: |
-          echo "Creating limited annotations file with first ${{ github.event.inputs.limit || 3 }} annotations..."
-          head -n 1 annotations.tsv > annotations_limited.tsv
-          tail -n +2 annotations.tsv | head -n ${{ github.event.inputs.limit || 3 }} >> annotations_limited.tsv
-          echo "Limited annotations file created:"
-          cat annotations_limited.tsv
-          
-      - name: Update Python script to use limited file
-        run: |
-          # Create a temporary version of the script that uses annotations_limited.tsv
-          sed 's/ANNOTATIONS_FILE = "annotations.tsv"/ANNOTATIONS_FILE = "annotations_limited.tsv"/' \
-            scripts/run_busco_analysis.py > scripts/run_busco_analysis_limited.py
-          chmod +x scripts/run_busco_analysis_limited.py
-          
-      - name: Run BUSCO analysis
-        shell: bash -el {0}
-        run: |
-          export BUSCO_CONFIG_FILE="$(pwd)/busco_config.ini"
-          python scripts/run_busco_analysis_limited.py
-        continue-on-error: true
-        
-      - name: Display results
-        run: |
-          echo "=== BUSCO Results ==="
-          if [ -f BUSCO.tsv ]; then
-            cat BUSCO.tsv
-          else
-            echo "No BUSCO.tsv file found"
-          fi
-          
-          echo ""
-          echo "=== Failures ==="
-          if [ -f fails.tsv ]; then
-            cat fails.tsv
-          else
-            echo "No fails.tsv file found"
-          fi
-          
-      - name: Upload results as artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: busco-results-${{ github.run_number }}
-          path: |
-            BUSCO.tsv
-            fails.tsv
-            annotations_limited.tsv
-          
-      - name: Commit results
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          
-          # Add result files
-          git add BUSCO.tsv fails.tsv
-          
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Update BUSCO analysis results (processed ${{ github.event.inputs.limit || 3 }} annotations) [skip ci]
-
-          Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
-            git push
-          fi
