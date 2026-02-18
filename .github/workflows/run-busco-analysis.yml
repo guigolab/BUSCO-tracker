@@ -24,85 +24,64 @@ jobs:
         with:
           python-version: '3.11'
           
+      - name: Set up Conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          python-version: '3.11'
+          miniforge-version: latest
+          channels: bioconda,conda-forge,defaults
+          channel-priority: strict
+          
       - name: Install annocli
         run: |
           echo "Installing annocli"
           git clone https://github.com/apollo994/annocli.git
           pip install -e annocli/
           
-      - name: Pull Docker images
+      - name: Install AGAT and BUSCO via conda
+        shell: bash -el {0}
         run: |
-          echo "Pulling AGAT Docker image..."
-          docker pull quay.io/biocontainers/agat:1.4.0--pl5321hdfd78af_0
+          echo "Installing AGAT..."
+          conda install -y -c bioconda agat
           
-          echo "Pulling BUSCO Docker image..."
-          docker pull ezlabgva/busco:v5.7.1_cv1
+          echo "Installing BUSCO..."
+          conda install -y -c bioconda busco=6.0.0
+          
+          echo "Verifying installations..."
+          agat_sp_keep_longest_isoform.pl --help | head -5 || true
+          busco --version
           
       - name: Download BUSCO lineage dataset
+        shell: bash -el {0}
         run: |
           echo "Downloading eukaryota_odb12 lineage dataset..."
           mkdir -p busco_downloads
-          docker run --rm \
-            -v "$(pwd)/busco_downloads:/busco_downloads" \
-            ezlabgva/busco:v5.7.1_cv1 \
-            busco --download eukaryota_odb12 --download_path /busco_downloads
+          busco --download eukaryota_odb12 --download_path busco_downloads
           
-          # List downloaded datasets
           echo "Downloaded datasets:"
           ls -la busco_downloads/
           
-      - name: Create Docker wrapper scripts
+      - name: Set BUSCO config
+        shell: bash -el {0}
         run: |
-          mkdir -p bin
-          
-          # Create AGAT wrapper for agat_sp_keep_longest_isoform.pl
-          cat > bin/agat_sp_keep_longest_isoform.pl << 'EOF'
-          #!/bin/bash
-          docker run --rm \
-            -v "$(pwd)":/data \
-            -w /data \
-            quay.io/biocontainers/agat:1.4.0--pl5321hdfd78af_0 \
-            agat_sp_keep_longest_isoform.pl "$@"
-          EOF
-          chmod +x bin/agat_sp_keep_longest_isoform.pl
-          
-          # Create AGAT wrapper for agat_sp_extract_sequences.pl
-          cat > bin/agat_sp_extract_sequences.pl << 'EOF'
-          #!/bin/bash
-          docker run --rm \
-            -v "$(pwd)":/data \
-            -w /data \
-            quay.io/biocontainers/agat:1.4.0--pl5321hdfd78af_0 \
-            agat_sp_extract_sequences.pl "$@"
-          EOF
-          chmod +x bin/agat_sp_extract_sequences.pl
-          
-          # Create BUSCO wrapper
-          cat > bin/busco << 'EOF'
-          #!/bin/bash
-          docker run --rm \
-            -v "$(pwd)":/data \
-            -v "$(pwd)/busco_downloads":/busco_downloads \
-            -e BUSCO_CONFIG_FILE=/busco_downloads/config.ini \
-            -w /data \
-            ezlabgva/busco:v5.7.1_cv1 \
-            busco "$@" --download_path /busco_downloads
-          EOF
-          chmod +x bin/busco
-          
-          # Add bin to PATH
-          echo "$(pwd)/bin" >> $GITHUB_PATH
+          echo "Configuring BUSCO download path..."
+          export BUSCO_CONFIG_FILE="$(pwd)/busco_config.ini"
+          echo "[busco]" > busco_config.ini
+          echo "download_path = $(pwd)/busco_downloads" >> busco_config.ini
+          cat busco_config.ini
           
       - name: Verify tool installation
+        shell: bash -el {0}
         run: |
           echo "Checking annocli..."
           annocli --version || echo "annocli installed"
           
           echo "Checking AGAT..."
-          ./bin/agat_sp_keep_longest_isoform.pl --help | head -5 || true
+          agat_sp_keep_longest_isoform.pl --help | head -5 || true
           
           echo "Checking BUSCO..."
-          ./bin/busco --version || true
+          busco --version
           
       - name: Prepare limited annotations file
         run: |
@@ -120,8 +99,9 @@ jobs:
           chmod +x scripts/run_busco_analysis_limited.py
           
       - name: Run BUSCO analysis
+        shell: bash -el {0}
         run: |
-          export PATH="$(pwd)/bin:$PATH"
+          export BUSCO_CONFIG_FILE="$(pwd)/busco_config.ini"
           python scripts/run_busco_analysis_limited.py
         continue-on-error: true
         

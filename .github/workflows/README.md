@@ -20,11 +20,10 @@ Runs BUSCO analysis on a limited number of annotations.
 **Trigger:** Manual (workflow_dispatch) with configurable limit
 
 **What it does:**
-- Sets up Python environment
-- Installs annocli via pip
-- Sets up AGAT and BUSCO via Docker containers
+- Sets up Python environment and Conda
+- Installs annocli via pip (from GitHub)
+- Installs AGAT and BUSCO via Conda
 - Downloads eukaryota_odb12 lineage dataset
-- Creates wrapper scripts for Docker-based tools
 - Processes first N annotations (default: 3)
 - Commits results to `BUSCO.tsv` and `fails.tsv`
 
@@ -103,23 +102,29 @@ For 3 annotations:
 
 ## Troubleshooting
 
-### Docker Pull Errors
-If Docker images fail to pull, the workflow will fail. This is usually due to:
-- Network issues
-- Rate limiting on Docker Hub/Quay.io
+### Conda Installation Errors
+If conda packages fail to install:
+- Check bioconda channel availability
+- Verify package versions are available
+- Try without version pinning (remove `=6.0.0`)
 
 **Solution:** Re-run the workflow
 
 ### BUSCO Dataset Download Fails
 If the lineage dataset download fails:
-- Check BUSCO dataset availability
-- Verify Docker container has internet access
+- Check BUSCO dataset availability at https://busco-data.ezlab.org
+- Verify network connectivity
 
 ### Pipeline Errors
 Check the workflow logs for specific step failures:
 - Download errors: Check URL accessibility
-- Tool errors: Review error messages in logs
+- Tool errors: Review error messages in logs (use `shell: bash -el {0}` for conda commands)
 - Check `fails.tsv` for detailed error information
+
+### Conda Environment Issues
+If tools aren't found after installation:
+- Ensure steps use `shell: bash -el {0}` to activate conda environment
+- Verify conda channels are properly configured
 
 ## Customization
 
@@ -132,11 +137,18 @@ Edit the workflow file and change `eukaryota_odb12` to your desired lineage (e.g
 ### Add More CPUs
 Edit the BUSCO command in `busco_pipeline.py` and change the `-c` parameter.
 
-### Use Different Docker Images
-Update the Docker image tags in the workflow file to use different versions.
+### Use Different Tool Versions
+Update the conda install commands in the workflow:
+```yaml
+conda install -y -c bioconda busco=6.1.0  # Different BUSCO version
+conda install -y -c bioconda agat=1.2.0   # Specific AGAT version
+```
 
 ## Notes
 
+- The workflow uses Conda for reproducible bioinformatics tool installation
+- All steps that use conda tools require `shell: bash -el {0}` to activate the environment
+- BUSCO 6.0.0 is used for the latest features and improvements
 - The workflow uses `continue-on-error: true` for the analysis step to ensure results are committed even if some annotations fail
 - Commits are marked with `[skip ci]` to prevent recursive workflow triggers
 - Temporary files are cleaned up automatically after each annotation
