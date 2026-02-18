@@ -45,12 +45,11 @@ jobs:
         run: |
           echo "Installing agat and busco"
           mamba install -y -c conda-forge -c bioconda \
-            # "biopython>=1.79" \
-            agat \
-            "busco>=6.0.0"
+            "agat==1.6.1" \
+            "busco==6.0.0"
           
           echo "Verifying installations..."
-          # python -c "import Bio; print(f'Biopython version: {Bio.__version__}')"
-          agat_sp_keep_longest_isoform.pl --help | head -5 || true
+          agat_sp_keep_longest_isoform.pl --version
+          agat_sp_extract_sequences.pl --version
           busco --version
           
