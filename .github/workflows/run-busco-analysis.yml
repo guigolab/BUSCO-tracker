@@ -28,10 +28,11 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
-          python-version: '3.12'
+          python-version: '3.11'
           miniforge-version: latest
           channels: conda-forge,bioconda
           channel-priority: strict
+          use-mamba: true
           
       - name: Install annocli
         run: |
@@ -42,13 +43,14 @@ jobs:
       - name: Install AGAT and BUSCO via conda
         shell: bash -el {0}
         run: |
-          echo "Installing AGAT..."
-          conda install -y -c bioconda agat
-          
-          echo "Installing BUSCO..."
-          conda install -y -c bioconda busco=6.0.0
+          echo "Installing all tools in a single command for better dependency resolution..."
+          mamba install -y -c conda-forge -c bioconda \
+            "biopython>=1.79" \
+            agat \
+            "busco>=6.0.0"
           
           echo "Verifying installations..."
+          python -c "import Bio; print(f'Biopython version: {Bio.__version__}')"
           agat_sp_keep_longest_isoform.pl --help | head -5 || true
           busco --version
           
