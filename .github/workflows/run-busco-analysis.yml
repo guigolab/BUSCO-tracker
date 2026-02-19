@@ -3,10 +3,10 @@ name: Run BUSCO Analysis
 on:
   workflow_dispatch:
     inputs:
-      limit:
-        description: 'Number of annotations to process (default: 3)'
+      annotation_id:
+        description: 'Specific annotation_id to process (leave blank for a random one)'
         required: false
-        default: '3'
+        default: ''
 
 permissions:
   contents: write
@@ -14,16 +14,11 @@ permissions:
 jobs:
   busco-analysis:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          
+
       - name: Set up Conda
         uses: conda-incubator/setup-miniconda@v3
         with:
@@ -33,23 +28,97 @@ jobs:
           channels: conda-forge,bioconda
           channel-priority: strict
           use-mamba: true
-          
+
       - name: Install annocli
         run: |
-          echo "Installing annocli"
           git clone https://github.com/apollo994/annocli.git
           pip install -e annocli/
-          
+
       - name: Install AGAT and BUSCO via conda
         shell: bash -el {0}
         run: |
-          echo "Installing agat and busco"
           mamba install -y -c conda-forge -c bioconda \
             "agat==1.6.1" \
             "busco==6.0.0"
-          
+
           echo "Verifying installations..."
           agat_sp_keep_longest_isoform.pl --help | head -n 5
           agat_sp_extract_sequences.pl --help | head -n 5
           busco --help | head -n 5
-          
+
+      - name: Select annotation
+        id: select
+        run: |
+          INPUT_ID="${{ github.event.inputs.annotation_id }}"
+
+          if [ -n "$INPUT_ID" ]; then
+            ROW=$(grep "^${INPUT_ID}" annotations.tsv)
+            if [ -z "$ROW" ]; then
+              echo "Error: annotation_id '${INPUT_ID}' not found in annotations.tsv"
+              exit 1
+            fi
+          else
+            ROW=$(tail -n +2 annotations.tsv | shuf -n 1)
+          fi
+
+          ANNOTATION_ID=$(echo "$ROW" | cut -f1)
+          ANNOTATION_URL=$(echo "$ROW" | cut -f2)
+          ASSEMBLY_URL=$(echo "$ROW"   | cut -f3)
+
+          echo "annotation_id=${ANNOTATION_ID}"   >> "$GITHUB_OUTPUT"
+          echo "annotation_url=${ANNOTATION_URL}" >> "$GITHUB_OUTPUT"
+          echo "assembly_url=${ASSEMBLY_URL}"     >> "$GITHUB_OUTPUT"
+
+          echo "Selected annotation: ${ANNOTATION_ID}"
+          echo "  annotation_url: ${ANNOTATION_URL}"
+          echo "  assembly_url:   ${ASSEMBLY_URL}"
+
+      - name: Download annotation and assembly files
+        run: |
+          mkdir -p input_data
+          echo "Downloading annotation..."
+          curl -fsSL "${{ steps.select.outputs.annotation_url }}" -o input_data/annotation.gff.gz
+          echo "Downloading assembly..."
+          curl -fsSL "${{ steps.select.outputs.assembly_url }}"   -o input_data/assembly.fna.gz
+
+      - name: Run BUSCO analysis
+        shell: bash -el {0}
+        run: |
+          python scripts/run_busco_analysis.py \
+            input_data/annotation.gff.gz \
+            input_data/assembly.fna.gz \
+            "${{ steps.select.outputs.annotation_id }}" \
+            BUSCO.tsv \
+            log.tsv
+
+      - name: Display results
+        if: always()
+        run: |
+          echo "=== BUSCO.tsv ==="
+          cat BUSCO.tsv
+          echo ""
+          echo "=== log.tsv ==="
+          cat log.tsv
+
+      - name: Upload results as artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: busco-results-${{ github.run_number }}
+          path: |
+            BUSCO.tsv
+            log.tsv
+
+      - name: Commit results
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add BUSCO.tsv log.tsv
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Add BUSCO result for ${{ steps.select.outputs.annotation_id }} [skip ci]
+
+          Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+            git push
+          fi
