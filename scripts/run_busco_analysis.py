@@ -59,7 +59,7 @@ def download_file(url, dest_path):
         return False, msg
 
 
-def run_shell_script(script_path, args, step_name, cwd=None):
+def run_shell_script(script_path, args, step_name):
     """
     Run a shell script and return success/failure.
 
@@ -70,7 +70,7 @@ def run_shell_script(script_path, args, step_name, cwd=None):
     logger.info(f"Running {step_name}: {' '.join(cmd)}")
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True, cwd=cwd)
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         logger.info(f"{step_name} completed successfully")
         return True, result.stdout, result.stderr
     except subprocess.CalledProcessError as e:
@@ -274,16 +274,13 @@ def main():
             append_to_log_tsv(log_tsv, annotation_id, 'fail', 'lineage_missing')
             sys.exit(1)
 
-        busco_out_name = f"busco_{annotation_id}"
+        busco_output = str(work_dir / f"busco_{annotation_id}")
 
         success, _, _ = run_shell_script(
             busco_script,
-            [str(protein_file), str(lineage_path), busco_out_name],
-            "run_busco",
-            cwd=str(work_dir)
+            [str(protein_file), str(lineage_path), busco_output],
+            "run_busco"
         )
-
-        busco_output = str(work_dir / busco_out_name)
 
         if not success:
             append_to_log_tsv(log_tsv, annotation_id, 'fail', 'run_busco')
