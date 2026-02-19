@@ -263,6 +263,7 @@ def main():
         logger.info("=" * 80)
 
         lineage_candidates = [
+            Path("assets/busco_downloads/lineages/eukaryota_odb12"),
             Path("busco_downloads/lineages/eukaryota_odb12"),
             Path("eukaryota_odb12"),
         ]
