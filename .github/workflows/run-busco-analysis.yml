@@ -73,20 +73,12 @@ jobs:
           echo "  annotation_url: ${ANNOTATION_URL}"
           echo "  assembly_url:   ${ASSEMBLY_URL}"
 
-      - name: Download annotation and assembly files
-        run: |
-          mkdir -p input_data
-          echo "Downloading annotation..."
-          curl -fsSL "${{ steps.select.outputs.annotation_url }}" -o input_data/annotation.gff.gz
-          echo "Downloading assembly..."
-          curl -fsSL "${{ steps.select.outputs.assembly_url }}"   -o input_data/assembly.fna.gz
-
       - name: Run BUSCO analysis
         shell: bash -el {0}
         run: |
           python scripts/run_busco_analysis.py \
-            input_data/annotation.gff.gz \
-            input_data/assembly.fna.gz \
+            "${{ steps.select.outputs.annotation_url }}" \
+            "${{ steps.select.outputs.assembly_url }}" \
             "${{ steps.select.outputs.annotation_id }}" \
             BUSCO.tsv \
             log.tsv
