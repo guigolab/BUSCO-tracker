@@ -57,7 +57,7 @@ fi
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Extracting longest isoforms..."
 LONGISOFORM_GFF="$WORK_DIR/${GFF_BASENAME}_longisoforms.gff3"
 agat_sp_keep_longest_isoform.pl \
-    -gff "$GFF_FILE" \
+    -f "$GFF_FILE" \
     -o "$LONGISOFORM_GFF"
 
 # Step 2: Extract protein sequences
