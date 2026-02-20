@@ -53,5 +53,5 @@ jobs:
             git commit -m "Aggregate BUSCO results [skip ci]
 
           Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+            git pull --rebase
             git push
-          fi
