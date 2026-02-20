@@ -9,7 +9,7 @@ on:
         default: ''
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   busco-analysis:
@@ -76,41 +76,29 @@ jobs:
       - name: Run BUSCO analysis
         shell: bash -el {0}
         run: |
+          ANN_ID="${{ steps.select.outputs.annotation_id }}"
           python scripts/run_busco_analysis.py \
             "${{ steps.select.outputs.annotation_url }}" \
             "${{ steps.select.outputs.assembly_url }}" \
-            "${{ steps.select.outputs.annotation_id }}" \
-            BUSCO.tsv \
-            log.tsv
+            "${ANN_ID}" \
+            "result_${ANN_ID}.tsv" \
+            "log_${ANN_ID}.tsv"
 
       - name: Display results
         if: always()
         run: |
-          echo "=== BUSCO.tsv ==="
-          cat BUSCO.tsv
+          ANN_ID="${{ steps.select.outputs.annotation_id }}"
+          echo "=== result_${ANN_ID}.tsv ==="
+          cat "result_${ANN_ID}.tsv" 2>/dev/null || echo "(no file)"
           echo ""
-          echo "=== log.tsv ==="
-          cat log.tsv
+          echo "=== log_${ANN_ID}.tsv ==="
+          cat "log_${ANN_ID}.tsv" 2>/dev/null || echo "(no file)"
 
-      - name: Upload results as artifacts
+      - name: Upload results as artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: busco-results-${{ github.run_number }}
+          name: busco-result-${{ steps.select.outputs.annotation_id }}
           path: |
-            BUSCO.tsv
-            log.tsv
-
-      - name: Commit results
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add BUSCO.tsv log.tsv
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Add BUSCO result for ${{ steps.select.outputs.annotation_id }} [skip ci]
-
-          Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
-            git push
-          fi
+            result_${{ steps.select.outputs.annotation_id }}.tsv
+            log_${{ steps.select.outputs.annotation_id }}.tsv
