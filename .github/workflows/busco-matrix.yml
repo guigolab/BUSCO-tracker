@@ -1,0 +1,148 @@
+name: BUSCO Matrix Analysis
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 1: Compute how many chunks are needed and build the matrix
+  # ─────────────────────────────────────────────────────────────────────────────
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix:        ${{ steps.build.outputs.matrix }}
+      chunk_count:   ${{ steps.build.outputs.chunk_count }}
+      pending_count: ${{ steps.build.outputs.pending_count }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build matrix
+        id: build
+        run: python scripts/build_matrix.py annotations.tsv log.tsv
+
+      - name: Summary
+        run: |
+          echo "Pending annotations : ${{ steps.build.outputs.pending_count }}"
+          echo "Chunks to create    : ${{ steps.build.outputs.chunk_count }}"
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 2: Run BUSCO analysis in parallel matrix jobs
+  # ─────────────────────────────────────────────────────────────────────────────
+  busco:
+    needs: setup
+    if: ${{ needs.setup.outputs.pending_count > 0 }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false   # one failing job must NOT cancel the other 255
+      max-parallel: 256
+      matrix:
+        chunk_index: ${{ fromJson(needs.setup.outputs.matrix) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Conda (with caching)
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          python-version: '3.11'
+          miniforge-version: latest
+          channels: conda-forge,bioconda
+          channel-priority: strict
+          use-mamba: true
+          cache-environment: true
+          cache-environment-key: busco-env-${{ runner.os }}
+
+      - name: Install AGAT and BUSCO
+        shell: bash -el {0}
+        run: |
+          mamba install -y -c conda-forge -c bioconda \
+            "agat==1.6.1" \
+            "busco==6.0.0"
+
+      - name: Install annocli
+        run: |
+          git clone https://github.com/apollo994/annocli.git
+          pip install -e annocli/
+
+      - name: Run batch
+        shell: bash -el {0}
+        run: |
+          python scripts/run_busco_batch.py \
+            annotations.tsv \
+            log.tsv \
+            ${{ matrix.chunk_index }} \
+            ${{ needs.setup.outputs.chunk_count }} \
+            batch_output/
+
+      - name: Upload batch artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: busco-batch-${{ matrix.chunk_index }}
+          path: batch_output/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 3: Aggregate all artifacts into BUSCO.tsv and log.tsv
+  # ─────────────────────────────────────────────────────────────────────────────
+  aggregate:
+    needs: [setup, busco]
+    # Run even if some busco jobs failed — commit partial results
+    # but skip if the workflow was manually cancelled
+    if: ${{ !cancelled() && needs.setup.outputs.pending_count > 0 }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all batch artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: busco-batch-*
+          path: artifacts/
+          merge-multiple: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Aggregate results
+        run: python scripts/aggregate_results.py artifacts/ BUSCO.tsv log.tsv
+
+      - name: Display summary
+        run: |
+          echo "=== BUSCO.tsv — last 10 rows ==="
+          tail -n 10 BUSCO.tsv
+          echo ""
+          echo "=== log.tsv — last 10 rows ==="
+          tail -n 10 log.tsv
+
+      - name: Commit and push
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add BUSCO.tsv log.tsv
+          if git diff --staged --quiet; then
+            echo "No new results to commit"
+          else
+            git commit -m "Aggregate BUSCO results (run ${{ github.run_number }}) [skip ci]
+
+          Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+            git push
+          fi
