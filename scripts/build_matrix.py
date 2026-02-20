@@ -71,6 +71,8 @@ def main():
     parser.add_argument('log_tsv',         help='Path to log.tsv')
     parser.add_argument('--max-chunks', type=int, default=256,
                         help='Maximum number of matrix chunks (default: 256)')
+    parser.add_argument('--max-per-job', type=int, default=None,
+                        help='Maximum annotations per job; limits total processed per trigger')
     args = parser.parse_args()
 
     all_ids      = load_ids(args.annotations_tsv)
@@ -95,7 +97,15 @@ def main():
         logger.info("No pending annotations — matrix will be empty, busco jobs will be skipped")
         n_chunks = 0
     else:
-        n_chunks = min(args.max_chunks, len(pending_ids))
+        if args.max_per_job:
+            import math
+            # Only schedule what can be processed this trigger (256 * max_per_job)
+            to_process = min(args.max_chunks * args.max_per_job, len(pending_ids))
+            n_chunks = min(args.max_chunks, math.ceil(to_process / args.max_per_job))
+            logger.info(f"Annotations this trigger: {to_process} "
+                        f"({len(pending_ids) - to_process} deferred to next run)")
+        else:
+            n_chunks = min(args.max_chunks, len(pending_ids))
 
     logger.info(f"Chunks to create  : {n_chunks}")
 

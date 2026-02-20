@@ -2,6 +2,11 @@ name: BUSCO Matrix Analysis
 
 on:
   workflow_dispatch:
+    inputs:
+      max_per_job:
+        description: 'Max annotations per matrix job (keep low to stay within 6h job limit)'
+        required: false
+        default: '10'
 
 permissions:
   contents: write
@@ -29,12 +34,13 @@ jobs:
 
       - name: Build matrix
         id: build
-        run: python scripts/build_matrix.py annotations.tsv log.tsv
+        run: python scripts/build_matrix.py annotations.tsv log.tsv --max-per-job ${{ github.event.inputs.max_per_job }}
 
       - name: Summary
         run: |
           echo "Pending annotations : ${{ steps.build.outputs.pending_count }}"
           echo "Chunks to create    : ${{ steps.build.outputs.chunk_count }}"
+          echo "Max per job         : ${{ github.event.inputs.max_per_job }}"
 
   # ─────────────────────────────────────────────────────────────────────────────
   # JOB 2: Run BUSCO analysis in parallel matrix jobs
@@ -54,7 +60,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Conda (with caching)
+      - name: Set up Conda
         uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
@@ -63,8 +69,6 @@ jobs:
           channels: conda-forge,bioconda
           channel-priority: strict
           use-mamba: true
-          cache-environment: true
-          cache-environment-key: busco-env-${{ runner.os }}
 
       - name: Install AGAT and BUSCO
         shell: bash -el {0}
@@ -86,7 +90,8 @@ jobs:
             log.tsv \
             ${{ matrix.chunk_index }} \
             ${{ needs.setup.outputs.chunk_count }} \
-            batch_output/
+            batch_output/ \
+            ${{ github.event.inputs.max_per_job }}
 
       - name: Upload batch artifact
         if: always()
@@ -95,6 +100,7 @@ jobs:
           name: busco-batch-${{ matrix.chunk_index }}
           path: batch_output/
           retention-days: 7
+          overwrite: true
 
   # ─────────────────────────────────────────────────────────────────────────────
   # JOB 3: Aggregate all artifacts into BUSCO.tsv and log.tsv

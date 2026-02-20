@@ -72,9 +72,9 @@ def load_annotations(tsv_path):
 
 
 def main():
-    if len(sys.argv) != 6:
+    if len(sys.argv) not in (6, 7):
         print("Usage: python run_busco_batch.py "
-              "<annotations_tsv> <log_tsv> <chunk_index> <chunk_count> <output_dir>")
+              "<annotations_tsv> <log_tsv> <chunk_index> <chunk_count> <output_dir> [max_per_job]")
         sys.exit(1)
 
     annotations_tsv = sys.argv[1]
@@ -82,6 +82,7 @@ def main():
     chunk_index     = int(sys.argv[3])
     chunk_count     = int(sys.argv[4])
     output_dir      = Path(sys.argv[5])
+    max_per_job     = int(sys.argv[6]) if len(sys.argv) == 7 else None
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -90,9 +91,12 @@ def main():
     pending_ids  = sorted(set(annotations.keys()) - logged_ids)  # sorted for determinism
 
     my_slice = pending_ids[chunk_index::chunk_count]
+    if max_per_job is not None:
+        my_slice = my_slice[:max_per_job]
 
     logger.info(f"Chunk {chunk_index}/{chunk_count}: "
-                f"{len(my_slice)} annotations to process")
+                f"{len(my_slice)} annotations to process"
+                + (f" (capped at {max_per_job})" if max_per_job else ""))
 
     script = Path(__file__).parent / 'run_busco_analysis.py'
     succeeded = 0
