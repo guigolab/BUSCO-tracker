@@ -2,6 +2,10 @@ name: Aggregate BUSCO Results
 
 on:
   workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Run ID of the BUSCO Matrix Analysis workflow to aggregate (find it in the Actions tab URL)'
+        required: true
 
 permissions:
   contents: write
@@ -15,12 +19,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download all busco-result artifacts
+      - name: Download all busco-batch artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: busco-result-*
+          pattern: busco-batch-*
           path: artifacts/
           merge-multiple: false
+          run-id: ${{ github.event.inputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: List downloaded artifacts
         run: find artifacts/ -type f | sort
