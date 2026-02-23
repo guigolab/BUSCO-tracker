@@ -47,6 +47,7 @@ OUT_PATH=$(dirname "${outfolder}")
 busco -m protein \
 	-i ${proteins} \
 	-l ${lineage} \
-	--cpu 2 \
+	--cpu 4 \
+    --offline \
 	--out_path "${OUT_PATH}" \
 	-o "${OUT_NAME}"
