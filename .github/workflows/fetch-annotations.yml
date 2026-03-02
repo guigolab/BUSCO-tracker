@@ -65,8 +65,8 @@ jobs:
               total = sum(1 for _ in f) - 1  # Exclude header
           
           # Append to log
-          with open('logs/annotations.log', 'a', newline='') as f:
-              writer = csv.writer(f, delimiter='\t')
+          with open('logs/annotations.log', 'a') as f:
+              writer = csv.writer(f, delimiter='\t', lineterminator='\n')
               writer.writerow([timestamp, added, removed, total])
           EOF
           git add logs/annotations.log
