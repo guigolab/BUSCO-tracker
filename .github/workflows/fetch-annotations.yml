@@ -69,3 +69,6 @@ jobs:
               writer = csv.writer(f, delimiter='\t')
               writer.writerow([timestamp, added, removed, total])
           EOF
+          git add logs/annotations.log
+          git commit -m "Update annotations.log - $(date '+%Y-%m-%d %H:%M:%S UTC')"
+          git push
