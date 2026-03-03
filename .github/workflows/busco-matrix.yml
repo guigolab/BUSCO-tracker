@@ -7,6 +7,11 @@ on:
         description: 'Max annotations per matrix job (keep low to stay within 6h job limit)'
         required: false
         default: '10'
+  push:
+    branches:
+      - main
+    paths:
+      - 'annotations.tsv'
 
 permissions:
   contents: write
@@ -34,13 +39,13 @@ jobs:
 
       - name: Build matrix
         id: build
-        run: python scripts/build_matrix.py annotations.tsv BUSCO/eukaryota_odb12/BUSCO.tsv BUSCO/eukaryota_odb12/error_log.tsv --max-per-job ${{ github.event.inputs.max_per_job }}
+        run: python scripts/build_matrix.py annotations.tsv BUSCO/eukaryota_odb12/BUSCO.tsv BUSCO/eukaryota_odb12/error_log.tsv --max-per-job ${{ github.event.inputs.max_per_job || '10' }}
 
       - name: Summary
         run: |
           echo "Pending annotations : ${{ steps.build.outputs.pending_count }}"
           echo "Chunks to create    : ${{ steps.build.outputs.chunk_count }}"
-          echo "Max per job         : ${{ github.event.inputs.max_per_job }}"
+          echo "Max per job         : ${{ github.event.inputs.max_per_job || '10' }}"
 
   # ─────────────────────────────────────────────────────────────────────────────
   # JOB 2: Run BUSCO analysis in parallel matrix jobs
@@ -104,7 +109,7 @@ jobs:
             ${{ matrix.chunk_index }} \
             ${{ needs.setup.outputs.chunk_count }} \
             batch_output/ \
-            ${{ github.event.inputs.max_per_job }}
+            ${{ github.event.inputs.max_per_job || '10' }}
 
       - name: Upload batch artifact
         if: always()
@@ -160,9 +165,10 @@ jobs:
           if git diff --staged --quiet; then
             echo "No new results to commit"
           else
-            git commit -m "Aggregate BUSCO results (run ${{ github.run_number }}) [skip ci]
-
-          Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+            ADDED=$(git diff --staged BUSCO/eukaryota_odb12/BUSCO.tsv | grep '^+' | grep -v '^+++' | wc -l | tr -d ' ')
+            ERRORS=$(git diff --staged BUSCO/eukaryota_odb12/error_log.tsv | grep '^+' | grep -v '^+++' | wc -l | tr -d ' ')
+            TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
+            git commit -m "Aggregate BUSCO results — ${TIMESTAMP}, +${ADDED} annotations, +${ERRORS} error_log rows"
             git pull --rebase
             git push
           fi
