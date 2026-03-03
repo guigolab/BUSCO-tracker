@@ -1,4 +1,5 @@
 annotation_id	run_at	step
+6fa05acaae6d936dc96b9bfead77bfe1	2026-02-27 17:26:06	HTTP 403 downloading https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/949/715/065/GCA_949715065.1_ihPerAcec1.1/GCA_949715065.1_ihPerAcec1.1_genomic.fna.gz: Forbidden
 6fa05acaae6d936dc96b9bfead77bfee	2026-02-27 17:26:06	HTTP 403 downloading https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/949/715/065/GCA_949715065.1_ihPerAcec1.1/GCA_949715065.1_ihPerAcec1.1_genomic.fna.gz: Forbidden
 c08abff107f468adb5fe08ed95f53bea	2026-02-27 17:27:55	FASTA index file /tmp/tmp.r8iRMURBnr/input.fna.fai created. Warning: couldn't find fasta record for 'MZ497416.1'! Error: no genomic sequence available (check -g option!).
 f3a5c37455429723b0a151281107210d	2026-02-27 17:31:36	FASTA index file /tmp/tmp.xVjl5OCaKV/input.fna.fai created. Warning: couldn't find fasta record for 'MT'! Error: no genomic sequence available (check -g option!).
