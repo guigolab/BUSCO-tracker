@@ -42,7 +42,7 @@ jobs:
 
       - name: Build matrix
         id: build
-        run: python scripts/build_matrix.py annotations.tsv BUSCO/eukaryota_odb12/BUSCO.tsv BUSCO/eukaryota_odb12/error_log.tsv --max-per-job ${{ github.event.inputs.max_per_job || '10' }}
+        run: python scripts/build_matrix.py annotations.tsv BUSCO/eukaryota_odb12/BUSCO.tsv BUSCO/eukaryota_odb12/error_log.tsv --max-per-job ${{ github.event.inputs.max_per_job || '10' }} --giveup-tsv BUSCO/eukaryota_odb12/giveup.log
 
       - name: Summary
         run: |
@@ -112,7 +112,8 @@ jobs:
             ${{ matrix.chunk_index }} \
             ${{ needs.setup.outputs.chunk_count }} \
             batch_output/ \
-            ${{ github.event.inputs.max_per_job || '10' }}
+            ${{ github.event.inputs.max_per_job || '10' }} \
+            --giveup-tsv BUSCO/eukaryota_odb12/giveup.log
 
       - name: Upload batch artifact
         if: always()

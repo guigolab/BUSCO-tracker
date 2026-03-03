@@ -51,6 +51,8 @@ def main():
                         help='Maximum number of matrix chunks (default: 256)')
     parser.add_argument('--max-per-job', type=int, default=None,
                         help='Maximum annotations per job; limits total processed per trigger')
+    parser.add_argument('--giveup-tsv', default=None,
+                        help='Path to giveup.log (given-up annotations to exclude)')
     args = parser.parse_args()
 
     all_ids     = load_ids(args.annotations_tsv)
@@ -67,13 +69,15 @@ def main():
 
     success_ids = load_ids(args.busco_tsv)
     error_ids   = load_ids(args.error_log_tsv)
+    giveup_ids  = load_ids(args.giveup_tsv) if args.giveup_tsv else set()
 
-    pending_ids = compute_pending_ids(all_ids, success_ids, error_ids)
-    never_run   = all_ids - success_ids - error_ids
+    pending_ids = compute_pending_ids(all_ids, success_ids, error_ids, giveup_ids)
+    never_run   = all_ids - success_ids - error_ids - giveup_ids
     failed      = (error_ids - success_ids) & all_ids
 
     logger.info(f"Total annotations : {len(all_ids)}")
     logger.info(f"Successful        : {len(success_ids)}")
+    logger.info(f"Given up          : {len(giveup_ids)}")
     logger.info(f"Never run         : {len(never_run)}")
     logger.info(f"Failed (retry)    : {len(failed)}")
     logger.info(f"Pending (total)   : {len(pending_ids)}")

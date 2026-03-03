@@ -58,6 +58,8 @@ def main():
     parser.add_argument('annotations_tsv', help='Path to annotations.tsv')
     parser.add_argument('busco_tsv',       help='Path to BUSCO.tsv (successful results)')
     parser.add_argument('error_log_tsv',   help='Path to error_log.tsv (failed runs)')
+    parser.add_argument('giveup_tsv',      nargs='?', default=None,
+                        help='Path to giveup.log (given-up annotations)')
     args = parser.parse_args()
 
     valid_ids = load_ids(args.annotations_tsv)
@@ -69,11 +71,15 @@ def main():
 
     removed_busco = filter_tsv(args.busco_tsv, valid_ids)
     removed_errors = filter_tsv(args.error_log_tsv, valid_ids)
+    removed_giveup = 0
+    if args.giveup_tsv:
+        removed_giveup = filter_tsv(args.giveup_tsv, valid_ids)
 
     logger.info(f"Cleanup complete: removed {removed_busco} rows from BUSCO.tsv, "
-                f"{removed_errors} rows from error_log.tsv")
+                f"{removed_errors} rows from error_log.tsv, "
+                f"{removed_giveup} rows from giveup.log")
 
-    if removed_busco == 0 and removed_errors == 0:
+    if removed_busco == 0 and removed_errors == 0 and removed_giveup == 0:
         logger.info("No stale entries found — files unchanged")
 
 

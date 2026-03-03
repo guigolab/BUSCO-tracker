@@ -11,11 +11,13 @@ Three manually-triggered (`workflow_dispatch`) GitHub Actions workflows form a p
 1. **fetch-annotations.yml** → runs `scripts/fetch_annotations.py` to pull annotation+assembly URLs from the AnnoTrEive API into `annotations.tsv` (columns: `annotation_id`, `annotation_url`, `assembly_url`).
 
 2. **busco-matrix.yml** — the main workflow with three jobs:
-   - **setup** → `scripts/build_matrix.py` reads `annotations.tsv`, `BUSCO/eukaryota_odb12/BUSCO.tsv`, and `BUSCO/eukaryota_odb12/error_log.tsv` to find pending annotations (never-run first, then failed retries). Emits a JSON matrix of chunk indices.
+   - **setup** → `scripts/build_matrix.py` reads `annotations.tsv`, `BUSCO/eukaryota_odb12/BUSCO.tsv`, `BUSCO/eukaryota_odb12/error_log.tsv`, and `BUSCO/eukaryota_odb12/giveup.log` to find pending annotations (never-run first, then failed retries; given-up annotations are excluded). Emits a JSON matrix of chunk indices.
    - **busco** → parallel matrix jobs (up to 256). Each runs `scripts/run_busco_batch.py` which strides over the pending list (`pending[chunk_index::chunk_count]`) and calls `scripts/run_busco_analysis.py` per annotation. Each annotation produces a `result_<id>.tsv` or `log_<id>.tsv` fragment.
    - **aggregate** → `scripts/aggregate_results.py` merges fragments into `BUSCO/eukaryota_odb12/BUSCO.tsv` and `BUSCO/eukaryota_odb12/error_log.tsv`, deduplicating by annotation_id. Commits results.
 
-3. **aggregate-results.yml** — standalone re-aggregation from a previous run's artifacts (takes a `run_id` input).
+3. **triage-errors.yml** → runs `scripts/triage_errors.py` after busco-matrix completes. Annotations that have failed more than once are moved from `error_log.tsv` to `BUSCO/eukaryota_odb12/giveup.log`; single-failure annotations stay in `error_log.tsv` for one more retry.
+
+4. **aggregate-results.yml** — standalone re-aggregation from a previous run's artifacts (takes a `run_id` input).
 
 ### Per-annotation pipeline (`run_busco_analysis.py`)
 
@@ -26,6 +28,7 @@ Each annotation goes through: download GFF+FASTA → `annocli alias` (sequence I
 - `annotations.tsv` — input registry of all annotations (auto-generated from API)
 - `BUSCO/eukaryota_odb12/BUSCO.tsv` — successful results (columns: `annotation_id`, `lineage`, `busco_count`, `complete`, `single`, `duplicated`, `fragmented`, `missing`)
 - `BUSCO/eukaryota_odb12/error_log.tsv` — failure log (columns: `annotation_id`, `run_at`, `step`)
+- `BUSCO/eukaryota_odb12/giveup.log` — annotations given up after repeated failures (same columns as error_log.tsv)
 
 ## Key Conventions
 

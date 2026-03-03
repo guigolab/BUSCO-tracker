@@ -60,6 +60,8 @@ def main():
     parser.add_argument('output_dir',      help='Directory to write result/log fragments')
     parser.add_argument('max_per_job',     type=int, nargs='?', default=None,
                         help='Cap on annotations processed by this chunk')
+    parser.add_argument('--giveup-tsv',    default=None,
+                        help='Path to giveup.log (given-up annotations to exclude)')
     args = parser.parse_args()
 
     output_dir = Path(args.output_dir)
@@ -68,8 +70,9 @@ def main():
     annotations = load_annotations(args.annotations_tsv)
     success_ids = load_ids(args.busco_tsv)
     error_ids   = load_ids(args.error_log_tsv)
+    giveup_ids  = load_ids(args.giveup_tsv) if args.giveup_tsv else set()
 
-    pending_ids = compute_pending_ids(set(annotations.keys()), success_ids, error_ids)
+    pending_ids = compute_pending_ids(set(annotations.keys()), success_ids, error_ids, giveup_ids)
 
     my_slice = pending_ids[args.chunk_index::args.chunk_count]
     if args.max_per_job is not None:
