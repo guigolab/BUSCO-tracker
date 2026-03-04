@@ -66,8 +66,6 @@ jobs:
             echo "No changes to commit"
           else
             TIMESTAMP=$(tail -1 BUSCO/eukaryota_odb12/.status.log | cut -f1)
-            git commit -m "Update status — $TIMESTAMP
-
-Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+            git commit -m "Update status — $TIMESTAMP"
             git push
           fi
