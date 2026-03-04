@@ -57,7 +57,7 @@ fi
 
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Removing MT chromosomes and ? strand..."
 CLEAN_GFF_FILE="$INPUT_DIR/${GFF_BASENAME}_no_MT.gff"
-awk '/^#/ || ($1 != "MT" && $1 != "chrM" && $5 != "?")' "$GFF_FILE" > "$CLEAN_GFF_FILE"
+awk '/^#/ || ($1 != "MT" && $1 != "chrM" && $7 != "?")' "$GFF_FILE" > "$CLEAN_GFF_FILE"
 
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Extracting aa seqeuences..."
 ALL_PROTEINS_OUTPUT="$INPUT_DIR/${GFF_BASENAME}_ALL_proteins.faa"
