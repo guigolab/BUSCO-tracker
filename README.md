@@ -5,7 +5,7 @@ See all results [here](BUSCO/eukaryota_odb12/BUSCO.tsv).
 
 ## Status
 
-**Last updated:** 2026-03-04T20:54:54Z
+**Last updated:** 2026-03-06T12:10:09Z
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
