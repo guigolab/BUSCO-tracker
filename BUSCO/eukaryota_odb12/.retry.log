@@ -1,3 +1,7 @@
 annotation_id	run_at	step
 061dc2e4681fc3c0b7f3f2451c43d1ff	2026-03-29 12:05:45	unexpected_error
 061dc2e4681fc3c0b7f3f2451c43d1ff	2026-03-29 12:19:17	unexpected_error
+f0d855da2d4bb341bfdfeedd10595d02	2026-04-05 12:14:24	HTTP 404 downloading https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/030/272/585/GCA_030272585.1_Bryopsis_sp._KO-2023_v1.0/GCA_030272585.1_Bryopsis_sp._KO-2023_v1.0_genomic.fna.gz: Not Found
+caf2f386f964323ff3a8f04bef21acf3	2026-04-05 12:15:26	unexpected_error
+8c0279057935475d970791999f66d8f3	2026-04-05 12:13:45	unexpected_error
+061dc2e4681fc3c0b7f3f2451c43d1ff	2026-04-05 12:15:39	unexpected_error
