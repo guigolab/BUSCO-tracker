@@ -1,10 +1,1 @@
 annotation_id	run_at	step
-f0d855da2d4bb341bfdfeedd10595d02	2026-04-05 12:14:24	HTTP 404 downloading https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/030/272/585/GCA_030272585.1_Bryopsis_sp._KO-2023_v1.0/GCA_030272585.1_Bryopsis_sp._KO-2023_v1.0_genomic.fna.gz: Not Found
-caf2f386f964323ff3a8f04bef21acf3	2026-04-05 12:15:26	unexpected_error
-8c0279057935475d970791999f66d8f3	2026-04-05 12:13:45	unexpected_error
-8c0279057935475d970791999f66d8f3	2026-04-05 12:25:26	unexpected_error
-caf2f386f964323ff3a8f04bef21acf3	2026-04-05 12:25:33	unexpected_error
-f0d855da2d4bb341bfdfeedd10595d02	2026-04-05 12:25:34	HTTP 404 downloading https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/030/272/585/GCA_030272585.1_Bryopsis_sp._KO-2023_v1.0/GCA_030272585.1_Bryopsis_sp._KO-2023_v1.0_genomic.fna.gz: Not Found
-8c0279057935475d970791999f66d8f3	2026-04-12 12:18:22	unexpected_error
-caf2f386f964323ff3a8f04bef21acf3	2026-04-12 12:17:12	unexpected_error
-f0d855da2d4bb341bfdfeedd10595d02	2026-04-12 12:24:50	HTTP 404 downloading https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/030/272/585/GCA_030272585.1_Bryopsis_sp._KO-2023_v1.0/GCA_030272585.1_Bryopsis_sp._KO-2023_v1.0_genomic.fna.gz: Not Found
