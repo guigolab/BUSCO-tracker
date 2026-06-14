@@ -1882,3 +1882,15 @@ daf66af950b14f65829b4090225bcc40	2026-06-07 12:31:17	URL error downloading http:
 f6679e6a475ba5deb7ec2d7c677c2e4f	2026-05-31 12:30:23	URL error downloading http://localhost/annotrieve/pending/GCA_057674105.1: [Errno 111] Connection refused
 f6679e6a475ba5deb7ec2d7c677c2e4f	2026-05-31 12:40:46	URL error downloading http://localhost/annotrieve/pending/GCA_057674105.1: [Errno 111] Connection refused
 f6679e6a475ba5deb7ec2d7c677c2e4f	2026-06-07 12:36:07	URL error downloading http://localhost/annotrieve/pending/GCA_057674105.1: [Errno 111] Connection refused
+7cad9aa7ba5cef8bcb7d6134058ee7af	2026-06-07 12:28:16	URL error downloading http://localhost/annotrieve/pending/GCA_057814765.1: [Errno 111] Connection refused
+7cad9aa7ba5cef8bcb7d6134058ee7af	2026-06-07 12:45:07	URL error downloading http://localhost/annotrieve/pending/GCA_057814765.1: [Errno 111] Connection refused
+7cad9aa7ba5cef8bcb7d6134058ee7af	2026-06-14 12:55:45	URL error downloading http://localhost/annotrieve/pending/GCA_057814765.1: [Errno 111] Connection refused
+e7431c83cd51bdcd92f381245baf60d3	2026-06-07 12:28:38	unexpected_error
+e7431c83cd51bdcd92f381245baf60d3	2026-06-07 12:45:12	unexpected_error
+e7431c83cd51bdcd92f381245baf60d3	2026-06-14 12:41:54	unexpected_error
+424c762200204a390db04e563f2d01e1	2026-06-07 12:27:43	URL error downloading http://localhost/annotrieve/pending/GCA_057816405.1: [Errno 111] Connection refused
+424c762200204a390db04e563f2d01e1	2026-06-07 12:45:06	URL error downloading http://localhost/annotrieve/pending/GCA_057816405.1: [Errno 111] Connection refused
+424c762200204a390db04e563f2d01e1	2026-06-14 12:46:22	URL error downloading http://localhost/annotrieve/pending/GCA_057816405.1: [Errno 111] Connection refused
+b9bffc2b17ac67101cf567bd3549641c	2026-06-07 12:37:44	HTTP 404 downloading https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/028/858/775/GCF_028858775.2_NHGRI_mPanTro3-v2.0_pri/GCF_028858775.2_NHGRI_mPanTro3-v2.0_pri_genomic.fna.gz: Not Found
+b9bffc2b17ac67101cf567bd3549641c	2026-06-07 12:45:07	HTTP 404 downloading https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/028/858/775/GCF_028858775.2_NHGRI_mPanTro3-v2.0_pri/GCF_028858775.2_NHGRI_mPanTro3-v2.0_pri_genomic.fna.gz: Not Found
+b9bffc2b17ac67101cf567bd3549641c	2026-06-14 12:36:51	HTTP 404 downloading https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/028/858/775/GCF_028858775.2_NHGRI_mPanTro3-v2.0_pri/GCF_028858775.2_NHGRI_mPanTro3-v2.0_pri_genomic.fna.gz: Not Found
